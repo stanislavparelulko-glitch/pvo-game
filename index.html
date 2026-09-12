@@ -3,85 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ПВО Сбивает Дроны</title>
+    <title>ПВО Стратегия: Заводы и Оборона</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            margin: 0;
-            padding: 0;
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: none; }
+        #gameCanvas { display: block; width: 100vw; height: 100vh; background: #050b14; }
+        
+        /* Панель ресурсов */
+        #resBar {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-around; background: rgba(22, 27, 34, 0.9);
+            padding: 8px; border-radius: 8px; border: 1px solid #30363d; font-size: 14px; font-weight: bold;
         }
-        body {
-            background-color: #111;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-            touch-action: none;
+        .res-item { color: #58a6ff; }
+        
+        /* Панель управления / Заводы */
+        #controlPanel {
+            position: absolute; bottom: 10px; left: 10px; right: 10px;
+            background: rgba(22, 27, 34, 0.95); padding: 10px; border-radius: 8px;
+            border: 1px solid #30363d; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
         }
-        #gameCanvas {
-            display: block;
-            background: linear-gradient(to bottom, #050b14, #101f38, #1a2b4c);
-            width: 100vw;
-            height: 100vh;
+        .btn {
+            background: #21262d; border: 1px solid #30363d; color: #f0f6fc;
+            padding: 8px 4px; border-radius: 6px; font-size: 11px; text-align: center; cursor: pointer;
         }
-        #ui {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 18px;
-            font-weight: bold;
-            text-shadow: 0 0 5px #000;
-            pointer-events: none;
-        }
-        #gameOverScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            display: none;
-        }
-        #gameOverScreen h1 {
-            color: #ff4444;
-            font-size: 36px;
-            margin-bottom: 10px;
-        }
-        #gameOverScreen p {
-            font-size: 20px;
-            margin-bottom: 20px;
-        }
-        #restartBtn {
-            padding: 12px 28px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,255,0,0.3);
+        .btn:active { background: #30363d; }
+        .btn span { display: block; color: #8b949e; font-size: 9px; margin-top: 2px; }
+
+        #gameOver {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; flex-direction: column;
+            justify-content: center; align-items: center; color: #f85149;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui">
-        <div id="scoreText">Счёт: 0</div>
-        <div id="healthText">База: 100%</div>
+    <div id="resBar">
+        <div class="res-item">⚙️ Металл: <span id="metal">150</span></div>
+        <div class="res-item">⚡ Энергия: <span id="energy">50</span></div>
+        <div class="res-item">🛡️ База: <span id="hp">100%</span></div>
     </div>
 
-    <div id="gameOverScreen">
+    <div id="controlPanel">
+        <div class="btn" onclick="buildFactory('metal')">🏭 Завод Металла<span>100 Металла</span></div>
+        <div class="btn" onclick="buildFactory('energy')">⚡ Электростанция<span>80 Металла</span></div>
+        <div class="btn" onclick="buildTurret()">🛸 Авто-Турель<span>150М / 50Э</span></div>
+        <div class="btn" onclick="useAirstrike()">💥 Авиаудар<span>100 Энергии</span></div>
+    </div>
+
+    <div id="gameOver">
         <h1>БАЗА УНИЧТОЖЕНА</h1>
-        <p id="finalScore">Уничтожено дронов: 0</p>
-        <button id="restartBtn" onclick="restartGame()">Играть снова</button>
+        <button class="btn" style="margin-top:20px; padding:10px 20px; font-size:16px;" onclick="location.reload()">Заново</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -90,224 +63,143 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        resize(); window.addEventListener('resize', resize);
+
+        let metal = 150, energy = 50, hp = 100;
+        let metalFactories = 1, energyFactories = 1, turrets = [];
+        let drones = [], bullets = [], particles = [];
+
+        // Генерация ресурсов заводами
+        setInterval(() => {
+            metal += metalFactories * 5;
+            energy += energyFactories * 3;
+            updateUI();
+        }, 2000);
+
+        function updateUI() {
+            document.getElementById('metal').innerText = metal;
+            document.getElementById('energy').innerText = energy;
+            document.getElementById('hp').innerText = hp + '%';
         }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
 
-        let score = 0;
-        let health = 100;
-        let gameOver = false;
+        function buildFactory(type) {
+            if (type === 'metal' && metal >= 100) {
+                metal -= 100; metalFactories++;
+            } else if (type === 'energy' && metal >= 80) {
+                metal -= 80; energyFactories++;
+            }
+            updateUI();
+        }
 
-        const pvo = {
-            x: canvas.width / 2,
-            y: canvas.height - 40,
-            angle: -Math.PI / 2
-        };
+        function buildTurret() {
+            if (metal >= 150 && energy >= 50) {
+                metal -= 150; energy -= 50;
+                turrets.push({ x: 50 + turrets.length * 60, y: canvas.height - 120 });
+                updateUI();
+            }
+        }
 
-        let bullets = [];
-        let drones = [];
-        let particles = [];
-
-        let lastShootTime = 0;
+        function useAirstrike() {
+            if (energy >= 100) {
+                energy -= 100;
+                drones.forEach(d => createExplosion(d.x, d.y, '#ff4444'));
+                drones = [];
+                updateUI();
+            }
+        }
 
         function spawnDrone() {
-            if (gameOver) return;
-            const size = 25;
-            const x = Math.random() * (canvas.width - size * 2) + size;
-            const speed = 1.5 + Math.random() * 2 + (score * 0.05);
-            drones.push({ x, y: -size, size, speed });
+            const isHeavy = Math.random() > 0.7;
+            drones.push({
+                x: Math.random() * (canvas.width - 40) + 20,
+                y: -20,
+                speed: isHeavy ? 1 : 2.5,
+                hp: isHeavy ? 3 : 1,
+                size: isHeavy ? 20 : 12,
+                color: isHeavy ? '#f85149' : '#e3b341'
+            });
         }
+        setInterval(spawnDrone, 1500);
 
-        setInterval(spawnDrone, 1000);
-
-        function shoot(targetX, targetY) {
-            const now = Date.now();
-            if (now - lastShootTime < 150) return;
-            lastShootTime = now;
-
-            pvo.x = canvas.width / 2;
-            pvo.y = canvas.height - 40;
-
-            const dx = targetX - pvo.x;
-            const dy = targetY - pvo.y;
-            pvo.angle = Math.atan2(dy, dx);
-
-            const speed = 12;
+        canvas.addEventListener('click', (e) => {
+            if (e.clientY > canvas.height - 100) return;
             bullets.push({
-                x: pvo.x,
-                y: pvo.y,
-                vx: Math.cos(pvo.angle) * speed,
-                vy: Math.sin(pvo.angle) * speed
+                x: canvas.width / 2, y: canvas.height - 80,
+                vx: (e.clientX - canvas.width / 2) * 0.05,
+                vy: (e.clientY - (canvas.height - 80)) * 0.05
             });
-        }
-
-        function handleInput(e) {
-            if (gameOver) return;
-            let x, y;
-            if (e.touches) {
-                x = e.touches[0].clientX;
-                y = e.touches[0].clientY;
-            } else {
-                x = e.clientX;
-                y = e.clientY;
-            }
-            shoot(x, y);
-        }
-
-        window.addEventListener('touchmove', handleInput);
-        window.addEventListener('touchstart', handleInput);
-        window.addEventListener('mousemove', (e) => {
-            if (e.buttons === 1) handleInput(e);
         });
-        window.addEventListener('click', handleInput);
 
-        function createExplosion(x, y, color = '#ff5722') {
-            for (let i = 0; i < 15; i++) {
-                particles.push({
-                    x, y,
-                    vx: (Math.random() - 0.5) * 6,
-                    vy: (Math.random() - 0.5) * 6,
-                    radius: Math.random() * 3 + 1,
-                    alpha: 1,
-                    color
-                });
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({ x, y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, alpha: 1, color });
             }
-        }
-
-        function update() {
-            if (gameOver) return;
-
-            pvo.x = canvas.width / 2;
-            pvo.y = canvas.height - 40;
-
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.x += b.vx;
-                b.y += b.vy;
-
-                if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-                    bullets.splice(i, 1);
-                }
-            }
-
-            for (let i = drones.length - 1; i >= 0; i--) {
-                let d = drones[i];
-                d.y += d.speed;
-
-                for (let j = bullets.length - 1; j >= 0; j--) {
-                    let b = bullets[j];
-                    let dist = Math.hypot(d.x - b.x, d.y - b.y);
-
-                    if (dist < d.size) {
-                        createExplosion(d.x, d.y, '#ff9800');
-                        drones.splice(i, 1);
-                        bullets.splice(j, 1);
-                        score += 1;
-                        document.getElementById('scoreText').innerText = 'Счёт: ' + score;
-                        break;
-                    }
-                }
-
-                if (d && d.y > canvas.height - 40) {
-                    createExplosion(d.x, d.y, '#ff0000');
-                    drones.splice(i, 1);
-                    health -= 20;
-                    if (health < 0) health = 0;
-                    document.getElementById('healthText').innerText = 'База: ' + health + '%';
-
-                    if (health <= 0) {
-                        endGame();
-                    }
-                }
-            }
-
-            for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.alpha -= 0.03;
-                if (p.alpha <= 0) {
-                    particles.splice(i, 1);
-                }
-            }
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#222';
-            ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-
-            ctx.save();
-            ctx.translate(pvo.x, pvo.y);
-            ctx.rotate(pvo.angle);
-            ctx.fillStyle = '#4cf';
-            ctx.fillRect(0, -5, 30, 10);
-            ctx.restore();
-
-            ctx.beginPath();
-            ctx.arc(pvo.x, pvo.y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = '#2c3e50';
-            ctx.fill();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#4cf';
-            ctx.stroke();
-
-            ctx.fillStyle = '#ffeb3b';
-            bullets.forEach(b => {
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            drones.forEach(d => {
-                ctx.fillStyle = '#e74c3c';
-                ctx.beginPath();
-                ctx.moveTo(d.x, d.y + d.size);
-                ctx.lineTo(d.x - d.size / 1.5, d.y - d.size / 2);
-                ctx.lineTo(d.x + d.size / 1.5, d.y - d.size / 2);
-                ctx.closePath();
-                ctx.fill();
-            });
-
-            particles.forEach(p => {
-                ctx.save();
-                ctx.globalAlpha = p.alpha;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
         }
 
         function gameLoop() {
-            update();
-            draw();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Отрисовка Базы и Турелей
+            ctx.fillStyle = '#21262d';
+            ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+
+            turrets.forEach(t => {
+                ctx.fillStyle = '#238636';
+                ctx.fillRect(t.x - 15, t.y, 30, 20);
+                // Автострельба турелей
+                if (Math.random() < 0.02 && drones.length > 0) {
+                    bullets.push({ x: t.x, y: t.y, vx: (drones[0].x - t.x)*0.03, vy: (drones[0].y - t.y)*0.03 });
+                }
+            });
+
+            // Пули
+            bullets.forEach((b, bi) => {
+                b.x += b.vx; b.y += b.vy;
+                ctx.fillStyle = '#58a6ff';
+                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+                if (b.y < 0 || b.x < 0 || b.x > canvas.width) bullets.splice(bi, 1);
+            });
+
+            // Дроны
+            drones.forEach((d, di) => {
+                d.y += d.speed;
+                ctx.fillStyle = d.color;
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI*2); ctx.fill();
+
+                // Попадания
+                bullets.forEach((b, bi) => {
+                    if (Math.hypot(d.x - b.x, d.y - b.y) < d.size) {
+                        d.hp--;
+                        bullets.splice(bi, 1);
+                        if (d.hp <= 0) {
+                            createExplosion(d.x, d.y, d.color);
+                            drones.splice(di, 1);
+                            metal += 15; updateUI();
+                        }
+                    }
+                });
+
+                // Дошел до базы
+                if (d.y > canvas.height - 80) {
+                    hp -= 10;
+                    drones.splice(di, 1);
+                    updateUI();
+                    if (hp <= 0) document.getElementById('gameOver').style.display = 'flex';
+                }
+            });
+
+            // Эффекты
+            particles.forEach((p, pi) => {
+                p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1;
+                if (p.alpha <= 0) particles.splice(pi, 1);
+            });
+
             requestAnimationFrame(gameLoop);
         }
-
-        function endGame() {
-            gameOver = true;
-            document.getElementById('finalScore').innerText = 'Уничтожено дронов: ' + score;
-            document.getElementById('gameOverScreen').style.display = 'flex';
-        }
-
-        function restartGame() {
-            score = 0;
-            health = 100;
-            bullets = [];
-            drones = [];
-            particles = [];
-            gameOver = false;
-            document.getElementById('scoreText').innerText = 'Счёт: 0';
-            document.getElementById('healthText').innerText = 'База: 100%';
-            document.getElementById('gameOverScreen').style.display = 'none';
-        }
-
         gameLoop();
     </script>
 </body>
