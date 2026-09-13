@@ -3,204 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ПВО Стратегия: Заводы и Оборона</title>
+    <title>ПВО Украины: Стратегия Обороны</title>
+    <!-- Подключаем интерактивные карты Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
-        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; touch-action: none; }
-        #gameCanvas { display: block; width: 100vw; height: 100vh; background: #050b14; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
         
-        /* Панель ресурсов */
-        #resBar {
-            position: absolute; top: 10px; left: 10px; right: 10px;
-            display: flex; justify-content: space-around; background: rgba(22, 27, 34, 0.9);
-            padding: 8px; border-radius: 8px; border: 1px solid #30363d; font-size: 14px; font-weight: bold;
-        }
-        .res-item { color: #58a6ff; }
-        
-        /* Панель управления / Заводы */
-        #controlPanel {
-            position: absolute; bottom: 10px; left: 10px; right: 10px;
-            background: rgba(22, 27, 34, 0.95); padding: 10px; border-radius: 8px;
-            border: 1px solid #30363d; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
-        }
-        .btn {
-            background: #21262d; border: 1px solid #30363d; color: #f0f6fc;
-            padding: 8px 4px; border-radius: 6px; font-size: 11px; text-align: center; cursor: pointer;
-        }
-        .btn:active { background: #30363d; }
-        .btn span { display: block; color: #8b949e; font-size: 9px; margin-top: 2px; }
+        #map { width: 100vw; height: 100vh; z-index: 1; }
 
-        #gameOver {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; flex-direction: column;
-            justify-content: center; align-items: center; color: #f85149;
+        /* Верхняя панель ресурсов */
+        #topBar {
+            position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000;
+            background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px;
+            padding: 8px 15px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
+        .res-val { color: #38bdf8; }
+
+        /* Нижняя панель техники (Магазин ПВО) */
+        #shopPanel {
+            position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1000;
+            background: rgba(15, 23, 42, 0.95); border: 1px solid #334155; border-radius: 10px;
+            padding: 8px; display: flex; gap: 8px; overflow-x: auto; box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+        }
+        .unit-card {
+            min-width: 90px; background: #1e293b; border: 1px solid #475569; border-radius: 6px;
+            padding: 6px; text-align: center; cursor: pointer; transition: 0.2s; flex-shrink: 0;
+        }
+        .unit-card:hover, .unit-card.active { border-color: #38bdf8; background: #0f172a; }
+        .unit-name { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+        .unit-price { font-size: 10px; color: #eab308; }
+
+        .leaflet-container { background: #1e293b; }
     </style>
 </head>
 <body>
 
-    <div id="resBar">
-        <div class="res-item">⚙️ Металл: <span id="metal">150</span></div>
-        <div class="res-item">⚡ Энергия: <span id="energy">50</span></div>
-        <div class="res-item">🛡️ База: <span id="hp">100%</span></div>
+    <div id="topBar">
+        <div>💰 Бюджет: <span class="res-val" id="money">3500</span> ₴</div>
+        <div>⚡ Энергия: <span class="res-val" id="energy">100</span></div>
+        <div>🛡️ Защита: <span class="res-val" id="hp">100%</span></div>
     </div>
 
-    <div id="controlPanel">
-        <div class="btn" onclick="buildFactory('metal')">🏭 Завод Металла<span>100 Металла</span></div>
-        <div class="btn" onclick="buildFactory('energy')">⚡ Электростанция<span>80 Металла</span></div>
-        <div class="btn" onclick="buildTurret()">🛸 Авто-Турель<span>150М / 50Э</span></div>
-        <div class="btn" onclick="useAirstrike()">💥 Авиаудар<span>100 Энергии</span></div>
-    </div>
+    <div id="map"></div>
 
-    <div id="gameOver">
-        <h1>БАЗА УНИЧТОЖЕНА</h1>
-        <button class="btn" style="margin-top:20px; padding:10px 20px; font-size:16px;" onclick="location.reload()">Заново</button>
+    <div id="shopPanel">
+        <div class="unit-card" onclick="selectUnit('kul', 300, 80)">
+            <div class="unit-name">Пулемёт</div>
+            <div class="unit-price">💰 300</div>
+        </div>
+        <div class="unit-card" onclick="selectUnit('kub', 900, 150)">
+            <div class="unit-name">2К12 КУБ</div>
+            <div class="unit-price">💰 900</div>
+        </div>
+        <div class="unit-card" onclick="selectUnit('iris', 1200, 220)">
+            <div class="unit-name">IRIS-T</div>
+            <div class="unit-price">💰 1200</div>
+        </div>
+        <div class="unit-card" onclick="selectUnit('patriot', 2500, 350)">
+            <div class="unit-name">Patriot</div>
+            <div class="unit-price">💰 2500</div>
+        </div>
+        <div class="unit-card" onclick="selectUnit('reb', 500, 120)">
+            <div class="unit-name">РЕБ</div>
+            <div class="unit-price">💰 500</div>
+        </div>
+        <div class="unit-card" onclick="selectUnit('radar', 400, 400)">
+            <div class="unit-name">Радар</div>
+            <div class="unit-price">💰 400</div>
+        </div>
     </div>
-
-    <canvas id="gameCanvas"></canvas>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // Инициализация карты с центром над Украиной
+        const map = L.map('map', { zoomControl: false }).setView([48.3794, 31.1656], 6);
 
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        resize(); window.addEventListener('resize', resize);
+        // Тёмный стиль карты
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 10, minZoom: 5
+        }).addTo(map);
 
-        let metal = 150, energy = 50, hp = 100;
-        let metalFactories = 1, energyFactories = 1, turrets = [];
-        let drones = [], bullets = [], particles = [];
+        let money = 3500, energy = 100, hp = 100;
+        let selectedUnit = null;
+        let installedUnits = [];
+        let drones = [];
 
-        // Генерация ресурсов заводами
+        // Каждые 3 секунды добавляется бюджет
         setInterval(() => {
-            metal += metalFactories * 5;
-            energy += energyFactories * 3;
-            updateUI();
-        }, 2000);
+            money += 50;
+            document.getElementById('money').innerText = money;
+        }, 3000);
 
-        function updateUI() {
-            document.getElementById('metal').innerText = metal;
-            document.getElementById('energy').innerText = energy;
-            document.getElementById('hp').innerText = hp + '%';
+        function selectUnit(type, price, range) {
+            selectedUnit = { type, price, range };
+            document.querySelectorAll('.unit-card').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
         }
 
-        function buildFactory(type) {
-            if (type === 'metal' && metal >= 100) {
-                metal -= 100; metalFactories++;
-            } else if (type === 'energy' && metal >= 80) {
-                metal -= 80; energyFactories++;
+        // Кликом по карте устанавливается выбранное ПВО
+        map.on('click', function(e) {
+            if (!selectedUnit) return;
+            if (money < selectedUnit.price) {
+                alert('Недостаточно средств!');
+                return;
             }
-            updateUI();
-        }
 
-        function buildTurret() {
-            if (metal >= 150 && energy >= 50) {
-                metal -= 150; energy -= 50;
-                turrets.push({ x: 50 + turrets.length * 60, y: canvas.height - 120 });
-                updateUI();
-            }
-        }
+            money -= selectedUnit.price;
+            document.getElementById('money').innerText = money;
 
-        function useAirstrike() {
-            if (energy >= 100) {
-                energy -= 100;
-                drones.forEach(d => createExplosion(d.x, d.y, '#ff4444'));
-                drones = [];
-                updateUI();
-            }
-        }
+            // Отображаем зону радиуса
+            const circle = L.circle(e.latlng, {
+                color: '#38bdf8',
+                fillColor: '#0284c7',
+                fillOpacity: 0.15,
+                radius: selectedUnit.range * 1000
+            }).addTo(map);
 
-        function spawnDrone() {
-            const isHeavy = Math.random() > 0.7;
-            drones.push({
-                x: Math.random() * (canvas.width - 40) + 20,
-                y: -20,
-                speed: isHeavy ? 1 : 2.5,
-                hp: isHeavy ? 3 : 1,
-                size: isHeavy ? 20 : 12,
-                color: isHeavy ? '#f85149' : '#e3b341'
+            // Иконка установленной установки
+            const marker = L.circleMarker(e.latlng, {
+                color: '#f8fafc',
+                fillColor: '#38bdf8',
+                fillOpacity: 1,
+                radius: 8
+            }).addTo(map);
+
+            installedUnits.push({
+                latlng: e.latlng,
+                range: selectedUnit.range * 1000,
+                type: selectedUnit.type,
+                lastShot: 0
             });
-        }
-        setInterval(spawnDrone, 1500);
 
-        canvas.addEventListener('click', (e) => {
-            if (e.clientY > canvas.height - 100) return;
-            bullets.push({
-                x: canvas.width / 2, y: canvas.height - 80,
-                vx: (e.clientX - canvas.width / 2) * 0.05,
-                vy: (e.clientY - (canvas.height - 80)) * 0.05
-            });
+            selectedUnit = null;
+            document.querySelectorAll('.unit-card').forEach(c => c.classList.remove('active'));
         });
 
-        function createExplosion(x, y, color) {
-            for (let i = 0; i < 10; i++) {
-                particles.push({ x, y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, alpha: 1, color });
-            }
+        // Запуск вражеских дронов с востока/севера
+        function spawnDrone() {
+            const startLat = 48 + (Math.random() - 0.5) * 4;
+            const startLng = 38 + (Math.random() - 0.5) * 2; // Границы
+            const targetLat = 50.45; const targetLng = 30.52; // Киев
+
+            const marker = L.circleMarker([startLat, startLng], {
+                color: '#ef4444', fillColor: '#dc2626', fillOpacity: 1, radius: 5
+            }).addTo(map);
+
+            drones.push({
+                marker, lat: startLat, lng: startLng,
+                targetLat, targetLng, hp: 2
+            });
         }
+        setInterval(spawnDrone, 2500);
 
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Игровой цикл
+        setInterval(() => {
+            const now = Date.now();
 
-            // Отрисовка Базы и Турелей
-            ctx.fillStyle = '#21262d';
-            ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+            // Движение дронов
+            drones.forEach((d, index) => {
+                d.lat += (d.targetLat - d.lat) * 0.005;
+                d.lng += (d.targetLng - d.lng) * 0.005;
+                d.marker.setLatLng([d.lat, d.lng]);
 
-            turrets.forEach(t => {
-                ctx.fillStyle = '#238636';
-                ctx.fillRect(t.x - 15, t.y, 30, 20);
-                // Автострельба турелей
-                if (Math.random() < 0.02 && drones.length > 0) {
-                    bullets.push({ x: t.x, y: t.y, vx: (drones[0].x - t.x)*0.03, vy: (drones[0].y - t.y)*0.03 });
-                }
-            });
-
-            // Пули
-            bullets.forEach((b, bi) => {
-                b.x += b.vx; b.y += b.vy;
-                ctx.fillStyle = '#58a6ff';
-                ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
-                if (b.y < 0 || b.x < 0 || b.x > canvas.width) bullets.splice(bi, 1);
-            });
-
-            // Дроны
-            drones.forEach((d, di) => {
-                d.y += d.speed;
-                ctx.fillStyle = d.color;
-                ctx.beginPath(); ctx.arc(d.x, d.y, d.size, 0, Math.PI*2); ctx.fill();
-
-                // Попадания
-                bullets.forEach((b, bi) => {
-                    if (Math.hypot(d.x - b.x, d.y - b.y) < d.size) {
+                // Проверка работы ПВО
+                installedUnits.forEach(u => {
+                    const dist = map.distance(u.latlng, [d.lat, d.lng]);
+                    if (dist < u.range && now - u.lastShot > 1000) {
                         d.hp--;
-                        bullets.splice(bi, 1);
+                        u.lastShot = now;
+
                         if (d.hp <= 0) {
-                            createExplosion(d.x, d.y, d.color);
-                            drones.splice(di, 1);
-                            metal += 15; updateUI();
+                            map.removeLayer(d.marker);
+                            drones.splice(index, 1);
+                            money += 100;
+                            document.getElementById('money').innerText = money;
                         }
                     }
                 });
 
-                // Дошел до базы
-                if (d.y > canvas.height - 80) {
-                    hp -= 10;
-                    drones.splice(di, 1);
-                    updateUI();
-                    if (hp <= 0) document.getElementById('gameOver').style.display = 'flex';
+                // Долёт до цели
+                if (Math.abs(d.lat - d.targetLat) < 0.1 && Math.abs(d.lng - d.targetLng) < 0.1) {
+                    map.removeLayer(d.marker);
+                    drones.splice(index, 1);
+                    hp -= 5;
+                    document.getElementById('hp').innerText = hp + '%';
                 }
             });
-
-            // Эффекты
-            particles.forEach((p, pi) => {
-                p.x += p.vx; p.y += p.vy; p.alpha -= 0.02;
-                ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha;
-                ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1;
-                if (p.alpha <= 0) particles.splice(pi, 1);
-            });
-
-            requestAnimationFrame(gameLoop);
-        }
-        gameLoop();
+        }, 100);
     </script>
 </body>
 </html>
