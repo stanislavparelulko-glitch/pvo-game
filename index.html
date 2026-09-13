@@ -14,7 +14,7 @@
         #topBar {
             position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000;
             background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px;
-            padding: 8px 15px; display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;
+            padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px;
         }
         .res-val { color: #38bdf8; }
 
@@ -24,34 +24,30 @@
             padding: 8px; display: flex; gap: 8px; overflow-x: auto;
         }
         .unit-card {
-            min-width: 90px; background: #1e293b; border: 1px solid #475569; border-radius: 6px;
+            min-width: 95px; background: #1e293b; border: 1px solid #475569; border-radius: 6px;
             padding: 6px; text-align: center; cursor: pointer; transition: 0.2s; flex-shrink: 0;
         }
         .unit-card:hover, .unit-card.active { border-color: #38bdf8; background: #0f172a; }
-        .unit-img { width: 32px; height: 32px; margin: 0 auto 2px; display: block; object-fit: contain; }
+        .unit-svg { width: 32px; height: 32px; margin: 0 auto 2px; display: block; }
         .unit-name { font-size: 11px; font-weight: bold; }
         .unit-price { font-size: 10px; color: #eab308; }
 
-        /* Кастомные маркеры на карте */
         .map-icon { background: none; border: none; }
-        .map-icon img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* Взрывы и шлейфы */
         .explosion-icon {
-            width: 35px; height: 35px; background: radial-gradient(circle, #ff4500 0%, #ffa500 60%, transparent 100%);
-            border-radius: 50%; animation: explode 0.4s ease-out forwards;
+            width: 40px; height: 40px; background: radial-gradient(circle, #ff1100 0%, #ffaa00 50%, transparent 100%);
+            border-radius: 50%; animation: explode 0.5s ease-out forwards;
         }
-        @keyframes explode { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        @keyframes explode { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* Шлейф ракеты */
         .missile-trail {
-            width: 8px; height: 8px; background: #38bdf8; border-radius: 50%;
-            box-shadow: 0 0 8px #38bdf8, 0 0 12px #ffffff;
+            width: 6px; height: 6px; background: #38bdf8; border-radius: 50%;
+            box-shadow: 0 0 10px #38bdf8, 0 0 15px #ffffff;
         }
         
         .strike-btn {
-            background: #ef4444; border: none; color: white; padding: 4px 8px;
-            border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;
+            background: #ef4444; border: none; color: white; padding: 6px 12px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;
         }
         .strike-btn:hover { background: #dc2626; }
     </style>
@@ -61,48 +57,57 @@
     <div id="topBar">
         <div>💰 Бюджет: <span class="res-val" id="money">3500</span> ₴</div>
         <div>🏭 Заводы: <span class="res-val" id="factories">0</span></div>
-        <div>🛸 Наши БПЛА: <span class="res-val" id="ourDrones">0</span></div>
-        <button class="strike-btn" onclick="launchAttackDrone()">🚀 Атака на НПЗ врага (500₴)</button>
+        <div>🚀 БПЛА «Лютый»: <span class="res-val" id="lyutyyCount">0</span></div>
+        <button class="strike-btn" onclick="launchLyutyy()">💥 Запустить «Лютый» на НПЗ</button>
     </div>
 
     <div id="map"></div>
 
     <div id="shopPanel">
-        <div class="unit-card" onclick="selectUnit('zu', 300, 60, 'https://img.icons8.com/color/48/armored-personnel-carrier.png')">
-            <img class="unit-img" src="https://img.icons8.com/color/48/armored-personnel-carrier.png">
+        <div class="unit-card" onclick="selectUnit('zu', 300, 60, svgIcons.zu)">
+            <div class="unit-svg">${svgIcons.zu}</div>
             <div class="unit-name">ЗУ-23-2</div>
             <div class="unit-price">💰 300</div>
         </div>
-        <div class="unit-card" onclick="selectUnit('kub', 1000, 140, 'https://img.icons8.com/color/48/missile.png')">
-            <img class="unit-img" src="https://img.icons8.com/color/48/missile.png">
+        <div class="unit-card" onclick="selectUnit('kub', 1000, 140, svgIcons.kub)">
+            <div class="unit-svg">${svgIcons.kub}</div>
             <div class="unit-name">2К12 КУБ</div>
             <div class="unit-price">💰 1000</div>
         </div>
-        <div class="unit-card" onclick="selectUnit('patriot', 2800, 300, 'https://img.icons8.com/color/48/military-radar.png')">
-            <img class="unit-img" src="https://img.icons8.com/color/48/military-radar.png">
+        <div class="unit-card" onclick="selectUnit('patriot', 2800, 300, svgIcons.patriot)">
+            <div class="unit-svg">${svgIcons.patriot}</div>
             <div class="unit-name">Patriot</div>
             <div class="unit-price">💰 2800</div>
         </div>
-        <div class="unit-card" onclick="selectUnit('reb', 700, 100, 'https://img.icons8.com/color/48/antenna.png')">
-            <img class="unit-img" src="https://img.icons8.com/color/48/antenna.png">
-            <div class="unit-name">РЕБ</div>
-            <div class="unit-price">💰 700</div>
-        </div>
-        <div class="unit-card" onclick="selectUnit('factory', 1200, 0, 'https://img.icons8.com/color/48/factory.png')">
-            <img class="unit-img" src="https://img.icons8.com/color/48/factory.png">
-            <div class="unit-name">Завод ПВО</div>
+        <div class="unit-card" onclick="selectUnit('factory', 1200, 0, svgIcons.factory)">
+            <div class="unit-svg">${svgIcons.factory}</div>
+            <div class="unit-name">Завод БПЛА</div>
             <div class="unit-price">💰 1200</div>
         </div>
     </div>
 
     <script>
-        const map = L.map('map', { zoomControl: false }).setView([48.3794, 31.1656], 6);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 9, minZoom: 5 }).addTo(map);
+        // Встроенные SVG иконки без внешних зависимостей
+        const svgIcons = {
+            shahed: `<svg viewBox="0 0 24 24" fill="#f87171"><path d="M12 2L2 22l10-3 10 3L12 2z"/></svg>`,
+            missile: `<svg viewBox="0 0 24 24" fill="#fbbf24"><path d="M12 2l-3 7v9l3 4 3-4V9l-3-7z"/></svg>`,
+            lyutyy: `<svg viewBox="0 0 24 24" fill="#38bdf8"><path d="M12 2L4 12h5v8h6v-8h5L12 2z"/></svg>`,
+            city: `<svg viewBox="0 0 24 24" fill="#60a5fa"><path d="M15 11V5l-3-3-3 3v6H3v10h18V11h-6z"/></svg>`,
+            npz: `<svg viewBox="0 0 24 24" fill="#f97316"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg>`,
+            zu: `<svg viewBox="0 0 24 24" fill="#a3e635"><path d="M4 18h16v2H4zm2-4h12v2H6zm3-8h6v6H9z"/></svg>`,
+            kub: `<svg viewBox="0 0 24 24" fill="#4ade80"><path d="M5 19h14v2H5zm2-6h10v4H7zm4-8h2v6h-2z"/></svg>`,
+            patriot: `<svg viewBox="0 0 24 24" fill="#22d3ee"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 4.2l6 3v5.6l-6 3-6-3V9.2l6-3z"/></svg>`,
+            factory: `<svg viewBox="0 0 24 24" fill="#fb923c"><path d="M22 22H2V10l7-3v3l7-3v3l4-2v12z"/></svg>`
+        };
 
-        let money = 3500, factoryCount = 0, ourDrones = 0;
+        const map = L.map('map', { zoomControl: false }).setView([48.3794, 31.1656], 6);
+        
+        // Работающая карта OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 9, minZoom: 5 }).addTo(map);
+
+        let money = 3500, factoryCount = 0, lyutyyCount = 0;
         let selectedUnit = null, installedUnits = [], enemyDrones = [], missiles = [], strikeDrones = [];
 
-        // Каждая цель имееет собственный ХП
         const cities = [
             { name: "Киев", lat: 50.45, lng: 30.52, hp: 100, maxHp: 100 },
             { name: "Харьков", lat: 49.99, lng: 36.23, hp: 100, maxHp: 100 },
@@ -111,32 +116,21 @@
             { name: "Львов", lat: 49.83, lng: 24.02, hp: 100, maxHp: 100 }
         ];
 
-        // Вражеские цели на территории РФ для ударов БПЛА
-        const enemyTargets = [
-            { name: "НПЗ Белгород", lat: 50.60, lng: 36.59, marker: null },
-            { name: "Склад БК Курск", lat: 51.73, lng: 36.19, marker: null },
-            { name: "НПЗ Ростов", lat: 47.23, lng: 39.70, marker: null }
+        const npzTargets = [
+            { name: "Рязанский НПЗ", lat: 54.58, lng: 39.75 },
+            { name: "Новороссийский терминал", lat: 44.72, lng: 37.77 },
+            { name: "Нижегородский НПЗ", lat: 56.12, lng: 44.18 }
         ];
 
-        // Отрисовка Городов Украины со своей полоской HP
         cities.forEach(city => {
-            const cityIcon = L.divIcon({
-                className: 'map-icon',
-                html: `<img src="https://img.icons8.com/color/48/city.png">`,
-                iconSize: [30, 30]
-            });
-            city.marker = L.marker([city.lat, city.lng], { icon: cityIcon }).addTo(map);
+            const icon = L.divIcon({ className: 'map-icon', html: svgIcons.city, iconSize: [28, 28] });
+            city.marker = L.marker([city.lat, city.lng], { icon }).addTo(map);
             updateCityTooltip(city);
         });
 
-        // Отрисовка целей в РФ
-        enemyTargets.forEach(target => {
-            const icon = L.divIcon({
-                className: 'map-icon',
-                html: `<img src="https://img.icons8.com/color/48/oil-rig.png" title="${target.name}">`,
-                iconSize: [28, 28]
-            });
-            target.marker = L.marker([target.lat, target.lng], { icon: icon }).addTo(map)
+        npzTargets.forEach(target => {
+            const icon = L.divIcon({ className: 'map-icon', html: svgIcons.npz, iconSize: [30, 30] });
+            target.marker = L.marker([target.lat, target.lng], { icon }).addTo(map)
                 .bindTooltip(`🔥 ${target.name}`, { permanent: true, direction: 'top' });
         });
 
@@ -144,28 +138,27 @@
             city.marker.bindTooltip(`<b>${city.name}</b><br>❤️ HP: ${city.hp}/${city.maxHp}`, { permanent: true, direction: 'bottom' });
         }
 
-        // Заводы приносят доход и производят БПЛА
+        // Автопроизводство БПЛА «Лютый» на заводах
         setInterval(() => {
-            money += 60 + factoryCount * 50;
-            if (factoryCount > 0 && Math.random() > 0.4) {
-                ourDrones += factoryCount;
-                document.getElementById('ourDrones').innerText = ourDrones;
+            money += 70 + factoryCount * 60;
+            if (factoryCount > 0) {
+                lyutyyCount += factoryCount;
+                document.getElementById('lyutyyCount').innerText = lyutyyCount;
             }
             document.getElementById('money').innerText = money;
-        }, 2000);
+        }, 2500);
 
-        function selectUnit(type, price, range, iconUrl) {
-            selectedUnit = { type, price, range, iconUrl };
+        function selectUnit(type, price, range, svgHtml) {
+            selectedUnit = { type, price, range, svgHtml };
             document.querySelectorAll('.unit-card').forEach(c => c.classList.remove('active'));
             event.currentTarget.classList.add('active');
         }
 
-        // Проверка: Установка ПВО ДОПУСТИМА ТОЛЬКО на территории Украины (западнее 37° долготы)
         map.on('click', function(e) {
             if (!selectedUnit) return;
 
-            if (e.latlng.lng > 37.0) {
-                alert("❌ Ошибка: Установка ПВО на территории врага запрещена!");
+            if (e.latlng.lng > 37.5) {
+                alert("❌ Ошибка: Установка ПВО доступна только на территории Украины!");
                 return;
             }
 
@@ -183,14 +176,10 @@
             document.getElementById('money').innerText = money;
 
             if (selectedUnit.range > 0) {
-                L.circle(e.latlng, { color: '#38bdf8', fillColor: '#0284c7', fillOpacity: 0.1, radius: selectedUnit.range * 1000 }).addTo(map);
+                L.circle(e.latlng, { color: '#38bdf8', fillColor: '#0284c7', fillOpacity: 0.15, radius: selectedUnit.range * 1000 }).addTo(map);
             }
 
-            const unitIcon = L.divIcon({
-                className: 'map-icon',
-                html: `<img src="${selectedUnit.iconUrl}">`,
-                iconSize: [28, 28]
-            });
+            const unitIcon = L.divIcon({ className: 'map-icon', html: selectedUnit.svgHtml, iconSize: [28, 28] });
             L.marker(e.latlng, { icon: unitIcon }).addTo(map);
 
             installedUnits.push({ latlng: e.latlng, range: selectedUnit.range * 1000, type: selectedUnit.type, lastShot: 0 });
@@ -199,66 +188,57 @@
             document.querySelectorAll('.unit-card').forEach(c => c.classList.remove('active'));
         });
 
-        // Спавн Шахедов и Ракет с территории РФ
         function spawnEnemy() {
-            const isMissile = Math.random() > 0.7; // 30% шанс спавна Крылатой Ракеты
-            const startLat = 47 + Math.random() * 5;
-            const startLng = 37.5 + Math.random() * 2;
+            const isMissile = Math.random() > 0.75;
+            const startLat = 47 + Math.random() * 6;
+            const startLng = 38 + Math.random() * 2;
             const targetCity = cities[Math.floor(Math.random() * cities.length)];
 
-            const iconUrl = isMissile ? 
-                'https://img.icons8.com/color/48/supersonic-missile.png' : 
-                'https://img.icons8.com/color/48/drone.png';
-
-            const enemyIcon = L.divIcon({
-                className: 'map-icon',
-                html: `<img src="${iconUrl}">`,
-                iconSize: isMissile ? [26, 26] : [22, 22]
-            });
+            const iconSvg = isMissile ? svgIcons.missile : svgIcons.shahed;
+            const enemyIcon = L.divIcon({ className: 'map-icon', html: iconSvg, iconSize: isMissile ? [24, 24] : [20, 20] });
 
             const marker = L.marker([startLat, startLng], { icon: enemyIcon }).addTo(map);
 
             enemyDrones.push({
                 marker, lat: startLat, lng: startLng,
-                targetCity,
-                speed: isMissile ? 0.008 : 0.003,
-                hp: isMissile ? 4 : 2,
-                type: isMissile ? 'missile' : 'shahed'
+                targetCity, speed: isMissile ? 0.007 : 0.003, hp: isMissile ? 4 : 2, type: isMissile ? 'missile' : 'shahed'
             });
         }
-        setInterval(spawnEnemy, 2300);
+        setInterval(spawnEnemy, 2000);
 
-        // Пуск ракеты ПВО
         function launchMissile(startLatLng, targetEnemy) {
-            const missileIcon = L.divIcon({ className: 'missile-trail', iconSize: [8, 8] });
+            const missileIcon = L.divIcon({ className: 'missile-trail', iconSize: [6, 6] });
             const marker = L.marker(startLatLng, { icon: missileIcon }).addTo(map);
             missiles.push({ marker, lat: startLatLng.lat, lng: startLatLng.lng, targetEnemy });
         }
 
-        // Отправка нашего БПЛА на НПЗ в РФ
-        function launchAttackDrone() {
-            if (money < 500) { alert("Нужно 500₴ для запуска БПЛА!"); return; }
-            money -= 500;
-            document.getElementById('money').innerText = money;
+        // Запуск БПЛА «Лютый»
+        function launchLyutyy() {
+            if (lyutyyCount <= 0 && money < 600) {
+                alert("Нет готовых БПЛА! Постройте Завод или накопите 600₴.");
+                return;
+            }
 
-            const target = enemyTargets[Math.floor(Math.random() * enemyTargets.length)];
+            if (lyutyyCount > 0) {
+                lyutyyCount--;
+                document.getElementById('lyutyyCount').innerText = lyutyyCount;
+            } else {
+                money -= 600;
+                document.getElementById('money').innerText = money;
+            }
+
+            const target = npzTargets[Math.floor(Math.random() * npzTargets.length)];
             const startCity = cities[Math.floor(Math.random() * cities.length)];
 
-            const droneIcon = L.divIcon({
-                className: 'map-icon',
-                html: `<img src="https://img.icons8.com/color/48/stealth-bomber.png">`,
-                iconSize: [24, 24]
-            });
+            const icon = L.divIcon({ className: 'map-icon', html: svgIcons.lyutyy, iconSize: [26, 26] });
+            const marker = L.marker([startCity.lat, startCity.lng], { icon }).addTo(map);
 
-            const marker = L.marker([startCity.lat, startCity.lng], { icon: droneIcon }).addTo(map);
             strikeDrones.push({ marker, lat: startCity.lat, lng: startCity.lng, target });
         }
 
-        // Главный цикл физики
         setInterval(() => {
             const now = Date.now();
 
-            // Движение ракет ПВО
             missiles.forEach((m, mi) => {
                 if (!m.targetEnemy || m.targetEnemy.hp <= 0) {
                     map.removeLayer(m.marker);
@@ -269,34 +249,30 @@
                 m.lng += (m.targetEnemy.lng - m.lng) * 0.25;
                 m.marker.setLatLng([m.lat, m.lng]);
 
-                // Взрыв при перехвате
                 if (Math.abs(m.lat - m.targetEnemy.lat) < 0.04 && Math.abs(m.lng - m.targetEnemy.lng) < 0.04) {
                     m.targetEnemy.hp -= 2;
                     map.removeLayer(m.marker);
                     missiles.splice(mi, 1);
 
-                    const expIcon = L.divIcon({ className: 'explosion-icon', iconSize: [35, 35] });
+                    const expIcon = L.divIcon({ className: 'explosion-icon', iconSize: [40, 40] });
                     const expMarker = L.marker([m.lat, m.lng], { icon: expIcon }).addTo(map);
                     setTimeout(() => map.removeLayer(expMarker), 400);
                 }
             });
 
-            // Движение Шахедов и Крылатых ракет
             enemyDrones.forEach((d, index) => {
                 d.lat += (d.targetCity.lat - d.lat) * d.speed;
                 d.lng += (d.targetCity.lng - d.lng) * d.speed;
                 d.marker.setLatLng([d.lat, d.lng]);
 
-                // Перехват установками ПВО
                 installedUnits.forEach(u => {
                     const dist = map.distance(u.latlng, [d.lat, d.lng]);
-                    if (dist < u.range && now - u.lastShot > 1100) {
+                    if (dist < u.range && now - u.lastShot > 1000) {
                         launchMissile(u.latlng, d);
                         u.lastShot = now;
                     }
                 });
 
-                // Уничтожен ПВО
                 if (d.hp <= 0) {
                     map.removeLayer(d.marker);
                     enemyDrones.splice(index, 1);
@@ -304,12 +280,9 @@
                     document.getElementById('money').innerText = money;
                 }
 
-                // Враг долетел до города
                 if (Math.abs(d.lat - d.targetCity.lat) < 0.06 && Math.abs(d.lng - d.targetCity.lng) < 0.06) {
                     map.removeLayer(d.marker);
                     enemyDrones.splice(index, 1);
-                    
-                    // Наносим урон Конкретному городу
                     d.targetCity.hp = Math.max(0, d.targetCity.hp - (d.type === 'missile' ? 25 : 12));
                     updateCityTooltip(d.targetCity);
 
@@ -319,17 +292,17 @@
                 }
             });
 
-            // Движение наших БПЛА в РФ
+            // Полет БПЛА «Лютый» на НПЗ
             strikeDrones.forEach((sd, sdi) => {
-                sd.lat += (sd.target.lat - sd.lat) * 0.005;
-                sd.lng += (sd.target.lng - sd.lng) * 0.005;
+                sd.lat += (sd.target.lat - sd.lat) * 0.006;
+                sd.lng += (sd.target.lng - sd.lng) * 0.006;
                 sd.marker.setLatLng([sd.lat, sd.lng]);
 
                 if (Math.abs(sd.lat - sd.target.lat) < 0.06 && Math.abs(sd.lng - sd.target.lng) < 0.06) {
                     map.removeLayer(sd.marker);
                     strikeDrones.splice(sdi, 1);
 
-                    money += 1000; // Награда за уничтожение НПЗ
+                    money += 1200; // Доход за уничтожение НПЗ
                     document.getElementById('money').innerText = money;
 
                     const expIcon = L.divIcon({ className: 'explosion-icon', iconSize: [50, 50] });
