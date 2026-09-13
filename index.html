@@ -65,29 +65,28 @@
 
     <div id="shopPanel">
         <div class="unit-card" onclick="selectUnit('zu', 300, 60, svgIcons.zu)">
-            <div class="unit-svg">${svgIcons.zu}</div>
+            <div class="unit-svg" id="icon-zu"></div>
             <div class="unit-name">ЗУ-23-2</div>
             <div class="unit-price">💰 300</div>
         </div>
         <div class="unit-card" onclick="selectUnit('kub', 1000, 140, svgIcons.kub)">
-            <div class="unit-svg">${svgIcons.kub}</div>
+            <div class="unit-svg" id="icon-kub"></div>
             <div class="unit-name">2К12 КУБ</div>
             <div class="unit-price">💰 1000</div>
         </div>
         <div class="unit-card" onclick="selectUnit('patriot', 2800, 300, svgIcons.patriot)">
-            <div class="unit-svg">${svgIcons.patriot}</div>
+            <div class="unit-svg" id="icon-patriot"></div>
             <div class="unit-name">Patriot</div>
             <div class="unit-price">💰 2800</div>
         </div>
         <div class="unit-card" onclick="selectUnit('factory', 1200, 0, svgIcons.factory)">
-            <div class="unit-svg">${svgIcons.factory}</div>
+            <div class="unit-svg" id="icon-factory"></div>
             <div class="unit-name">Завод БПЛА</div>
             <div class="unit-price">💰 1200</div>
         </div>
     </div>
 
     <script>
-        // Встроенные SVG иконки без внешних зависимостей
         const svgIcons = {
             shahed: `<svg viewBox="0 0 24 24" fill="#f87171"><path d="M12 2L2 22l10-3 10 3L12 2z"/></svg>`,
             missile: `<svg viewBox="0 0 24 24" fill="#fbbf24"><path d="M12 2l-3 7v9l3 4 3-4V9l-3-7z"/></svg>`,
@@ -100,9 +99,12 @@
             factory: `<svg viewBox="0 0 24 24" fill="#fb923c"><path d="M22 22H2V10l7-3v3l7-3v3l4-2v12z"/></svg>`
         };
 
+        document.getElementById('icon-zu').innerHTML = svgIcons.zu;
+        document.getElementById('icon-kub').innerHTML = svgIcons.kub;
+        document.getElementById('icon-patriot').innerHTML = svgIcons.patriot;
+        document.getElementById('icon-factory').innerHTML = svgIcons.factory;
+
         const map = L.map('map', { zoomControl: false }).setView([48.3794, 31.1656], 6);
-        
-        // Работающая карта OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 9, minZoom: 5 }).addTo(map);
 
         let money = 3500, factoryCount = 0, lyutyyCount = 0;
@@ -138,7 +140,6 @@
             city.marker.bindTooltip(`<b>${city.name}</b><br>❤️ HP: ${city.hp}/${city.maxHp}`, { permanent: true, direction: 'bottom' });
         }
 
-        // Автопроизводство БПЛА «Лютый» на заводах
         setInterval(() => {
             money += 70 + factoryCount * 60;
             if (factoryCount > 0) {
@@ -212,7 +213,6 @@
             missiles.push({ marker, lat: startLatLng.lat, lng: startLatLng.lng, targetEnemy });
         }
 
-        // Запуск БПЛА «Лютый»
         function launchLyutyy() {
             if (lyutyyCount <= 0 && money < 600) {
                 alert("Нет готовых БПЛА! Постройте Завод или накопите 600₴.");
@@ -292,7 +292,6 @@
                 }
             });
 
-            // Полет БПЛА «Лютый» на НПЗ
             strikeDrones.forEach((sd, sdi) => {
                 sd.lat += (sd.target.lat - sd.lat) * 0.006;
                 sd.lng += (sd.target.lng - sd.lng) * 0.006;
@@ -302,7 +301,7 @@
                     map.removeLayer(sd.marker);
                     strikeDrones.splice(sdi, 1);
 
-                    money += 1200; // Доход за уничтожение НПЗ
+                    money += 1200;
                     document.getElementById('money').innerText = money;
 
                     const expIcon = L.divIcon({ className: 'explosion-icon', iconSize: [50, 50] });
